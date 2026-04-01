@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
-import csv
+from dotenv import load_dotenv
+import os
 # extract part of  the pipline
+PATH_TO_RAW_DATA = os.getenv("PATH_TO_RAW_DATA")
+
 def extract_data(file_path):
     df = pd.read_csv(file_path)
     columns_needed = [
@@ -59,16 +62,15 @@ def clean_education(value):
     return education_map.get(value, np.nan)
 
 
-def clean_dev_type(value):
-    """
-    Simplify DevType by taking the first listed role.
-    Example:
-    'Developer, full-stack;Developer, back-end' -> 'Developer, full-stack'
-    """
-    if pd.isna(value):
-        return "Unknown"
-    roles = [x.strip() for x in str(value).split(";") if x.strip()]
-    return roles[0] if roles else "Unknown"
+# def clean_dev_type(value):
+#     """
+#     Simplify DevType by taking the first listed role.
+#     Example:
+#     'Developer, full-stack;Developer, back-end' -> 'Developer, full-stack'
+#     """
+#     if pd.isna(value):
+#         return []
+#     return [x.strip() for x in str(value).split(";") if x.strip()]
 
 
 def split_languages(value):
@@ -125,29 +127,11 @@ def remove_salary_outliers(df, column="ConvertedCompYearly"):
     return df[(df[column] >= lower) & (df[column] <= upper)].copy()
 
 
-# Feature Engineering
-def create_language_features(df, top_n=15):
-    # Create binary columns for the top N most common languages.
-    all_languages = df["LanguageHaveWorkedWith"].explode()
-    top_languages = all_languages.value_counts().head(top_n).index.tolist()
-    for lang in top_languages:
-        col_name = f"lang_{lang.replace('/', '_').replace(' ', '_').replace('-', '_')}"
-        df[col_name] = df["LanguageHaveWorkedWith"].apply(lambda langs: int(lang in langs))
-    return df, top_languages
-
-
-def create_country_features(df, top_n=10):
-    #Keep only top countries, group the rest into 'Other'.
-    top_countries = df["Country"].value_counts().head(top_n).index.tolist()
-    df["Country"] = df["Country"].apply(lambda x: x if x in top_countries else "Other")
-    return df
-
-
 #Transform part of the ETL
 def transform_data(df):
     df["YearsCodePro"] = df["YearsCodePro"].apply(clean_years_code_pro)
     df["EdLevel"] = df["EdLevel"].apply(clean_education)
-    df["DevType"] = df["DevType"].apply(clean_dev_type)
+    # df["DevType"] = df["DevType"].apply(clean_dev_type)
     df["LanguageHaveWorkedWith"] = df["LanguageHaveWorkedWith"].apply(split_languages)
     df["Employment"] = df["Employment"].apply(clean_employment)
     df["ConvertedCompYearly"] = df["ConvertedCompYearly"].apply(clean_salary)
@@ -155,26 +139,14 @@ def transform_data(df):
     df = df[df["Employment"].isin(["Employed_full_time", "Employed_part_time", "Self_employed"])].copy()
     df = df.dropna(subset=["YearsCodePro", "EdLevel", "DevType", "Country"]).copy()
     df = remove_salary_outliers(df, "ConvertedCompYearly")
-    df = create_country_features(df, top_n=10)
-    df, top_languages = create_language_features(df, top_n=15)
-    df = pd.get_dummies(df, columns=["Country", "DevType", "Employment"], drop_first=True)
-    return df, top_languages
-
-
-# Load part of the ETL
-def load_model_data(file_path):
-    df = extract_data(file_path)
-    cleaned_df, top_languages = transform_data(df)
-    cleaned_df = cleaned_df.drop(columns=["LanguageHaveWorkedWith"])
-    X = cleaned_df.drop(columns=["ConvertedCompYearly"])
-    y = cleaned_df["ConvertedCompYearly"]
-    return X, y, cleaned_df, top_languages
+    df = df[~df["DevType"].str.contains("Other (please specify):", regex=False)].copy()
+    df = df[~df["DevType"].str.contains("Student", regex=False)].copy()
+    return df
 
 
 #running the ETL 
-file_path = r"C:\COSC 301\COSC 301 Project\Project\subset.csv"
-X, y, cleaned_df, top_languages = load_model_data(file_path)
-X.to_csv("cleaned_data.csv", index =  False)
-with open('Top_languages.csv', 'w') as file:
-   for lang in top_languages:
-        file.write(lang + '\n')
+file_path = PATH_TO_RAW_DATA
+df = extract_data(file_path)
+cleaned_df = transform_data(df)
+cleaned_df['respondent_id'] = range(1, 1+len(cleaned_df))
+cleaned_df.to_csv("cleaned_data.csv", index =  False)
