@@ -17,7 +17,7 @@ def run_load_db():
 def run_notebook(path):
     subprocess.run([
         sys.executable, "-m", "nbconvert",
-        "--to", "notebook", "--execute", "--inplace", path
+        "--to", "notebook", "--execute", "--output", "/tmp/executed.ipynb", path
     ], check=True)
 
 
