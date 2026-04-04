@@ -3,6 +3,7 @@ import numpy as np
 from dotenv import load_dotenv
 import os
 # extract part of  the pipline
+load_dotenv()
 PATH_TO_RAW_DATA = os.getenv("PATH_TO_RAW_DATA")
 
 def extract_data(file_path):
@@ -144,9 +145,14 @@ def transform_data(df):
     return df
 
 
-#running the ETL 
-file_path = PATH_TO_RAW_DATA
-df = extract_data(file_path)
-cleaned_df = transform_data(df)
-cleaned_df['respondent_id'] = range(1, 1+len(cleaned_df))
-cleaned_df.to_csv("cleaned_data.csv", index =  False)
+def main():
+    file_path = PATH_TO_RAW_DATA
+    df = extract_data(file_path)
+    cleaned_df = transform_data(df)
+    cleaned_df['respondent_id'] = range(1, 1+len(cleaned_df))
+    cleaned_df.to_csv("cleaned_data.csv", index=False)
+    print("ETL complete")
+
+
+if __name__ == "__main__":
+    main()
