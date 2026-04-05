@@ -29,3 +29,9 @@ CREATE TABLE IF NOT EXISTS predictions (
     model_type VARCHAR(50),
     FOREIGN KEY (respondent_id) REFERENCES developers(respondent_id)
 );
+
+CREATE TABLE IF NOT EXISTS model_results (
+    model_type VARCHAR(100),
+    r2 FLOAT,
+    rmse FLOAT
+);
