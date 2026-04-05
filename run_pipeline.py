@@ -3,6 +3,8 @@ import subprocess
 import sys
 import tempfile
 
+import nbformat
+
 from src import load_db
 from src import etl
 
@@ -26,11 +28,19 @@ def run_notebook(path):
 
     subprocess.run([
         sys.executable, "-m", "nbconvert",
-        "--to", "notebook", 
-        "--execute", 
-        "--output", output_path, 
+        "--to", "notebook",
+        "--execute",
+        "--output", output_path,
         path
-    ], check=True, env=env)  
+    ], check=True, env=env)
+
+    with open(output_path, encoding="utf-8") as f:
+        nb = nbformat.read(f, as_version=4)
+    for cell in nb.cells:
+        if cell.cell_type == "code":
+            for output in cell.outputs:
+                if output.output_type == "stream" and output.name == "stdout":
+                    print(output.text, end="")
 
 
 def run_eda():
