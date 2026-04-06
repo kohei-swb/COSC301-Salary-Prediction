@@ -19,8 +19,7 @@ def load_languages(cursor, df):
     sql = """
     INSERT INTO languages (language_name) VALUES (%s)
     """
-    for k in sorted_languages:
-        cursor.execute(sql, (k,))
+    cursor.executemany(sql, [(k,) for k in sorted_languages])
         # print(k)
     print(f"languages: {len(all_languages)}insertion completed")
 
@@ -77,6 +76,7 @@ def load_developer_languages(cursor, df):
     """
     lang_map = {name: lid for lid, name in languages_li_tu}
     
+    rows = []
     for _, row in df.iterrows():
         res_id = int(row["respondent_id"])
         languages = row["LanguageHaveWorkedWith"].strip('[').strip(']').split(',')
@@ -84,8 +84,9 @@ def load_developer_languages(cursor, df):
         languages = [x for x in languages if len(x) != 0]
         for l in languages:
             if l in lang_map:
-                cursor.execute(insert_dev_lan_sql, (res_id, lang_map[l]))
+                rows.append((res_id, lang_map[l]))
                 count += 1
+    cursor.executemany(insert_dev_lan_sql, rows)
     print(f"developer_languages: {count} insertion completed")
 
 def main():
