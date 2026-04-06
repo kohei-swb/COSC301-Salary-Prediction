@@ -77,7 +77,8 @@ COSC301-Salary-Prediction/
 │   └── cleaned_data.csv        # Cleaned dataset produced by ETL
 ├── sql/
 │   ├── schema.sql              # Creates the database and all tables
-│   └── reset_schema.sql        # Drops all tables (used before re-loading)
+│   ├── reset_schema.sql        # Drops all tables (used before re-loading)
+│   └── db_dump.sql             # Full MySQL dump of the salary_prediction database
 ├── src/
 │   ├── etl.py                  # Extract, transform, load from CSV
 │   ├── load_db.py              # Inserts cleaned data into MySQL
